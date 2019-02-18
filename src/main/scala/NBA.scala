@@ -15,4 +15,7 @@ case class NBA[A <: Letter](
       .map(c => (c._1, c._2.max))
     NBA[A](reachable)
   }
+
 }
+
+

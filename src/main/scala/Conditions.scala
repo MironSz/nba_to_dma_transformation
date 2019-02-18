@@ -3,6 +3,7 @@ abstract class Condition[A <: Letter] {
 }
 
 case class MullerCondition[A <: Letter](
+
     s: List[(List[DeterminizedState[A]], List[Int])],
     iter: Int,
     ds: DeterminizedState[A],
@@ -20,8 +21,9 @@ case class MullerCondition[A <: Letter](
       nextState,
       this)
   }
-
 }
+
+
 case class MullerConditionImageTransducer[A <: Letter, B <: Letter](
     mc: Condition[B],
     dst: DeterminizedStateWithTransducer[A, B]
@@ -31,4 +33,8 @@ case class MullerConditionImageTransducer[A <: Letter, B <: Letter](
     MullerConditionImageTransducer(mc.evaluateCondition(lastLetter),
                                    dst.readLetter(a))
   }
+}
+
+class MullerConditionForBuchiLanguage[A <:Letter, B <: BuchiLetter[A]] extends MullerCondition[B]{
+
 }

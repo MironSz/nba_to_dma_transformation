@@ -1,0 +1,1 @@
+Constructing DMA (Deterministic Muller Automaton) equivalent to NBA (Nondeterministic Buchi Automaton) based on McNaughton's Theorem's proof described in https://www.mimuw.edu.pl/~bojan/papers/toolbox-reduced-feb6.pdf

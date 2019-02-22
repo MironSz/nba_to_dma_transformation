@@ -1,40 +1,46 @@
-abstract class Condition[A <: Letter] {
-  def evaluateCondition(a: A): Condition[A]
+abstract class Condition[+S <: State] {
+  def evaluateCondition(t: Transition[S]): Condition[S]
+
+  def acceptanceRates:Int
 }
 
-case class MullerCondition[A <: Letter](
+case class MullerCondition[+S <: State](
+    transitionsOccurances: List[List[(Transition[S], Int)]],
+    previousCondition: MullerCondition[S])
+    extends Condition[S] {
 
-    s: List[(List[DeterminizedState[A]], List[Int])],
-    iter: Int,
-    ds: DeterminizedState[A],
-    prevCondition: MullerCondition[A])
-    extends Condition[A] {
-  def evaluateCondition(a: A): MullerCondition[A] = {
-    val nextState = ds.readLetter(a)
-
-    new MullerCondition[A](
-      s.map(c =>
-        if (c._1 contains nextState)
-          (c._1, c._1.zip(c._2).map(x => if (x._1 == nextState) iter else x._2))
-        else (c._1, c._2.map(x => -1))),
-      iter + 1,
-      nextState,
-      this)
+  override def acceptanceRates: Int = transitionsOccurances.map(t=>t.map(t2=>t2._2).min).max
+  override def evaluateCondition(
+      t: Transition[S]
+  ): MullerCondition[S] = {
+    val newtransitionsOccurances: List[List[(Transition[S], Int)]] =
+      transitionsOccurances.map(l => {
+        val l2 = l.map(b => b._1)
+        if (l2.contains(t))
+          l.map(b => if (b._1 == t) (b._1, b._2 + 1) else b)
+        else
+          l.map(b => (b._1, 0))
+      })
+    MullerCondition[S](newtransitionsOccurances, this)
   }
 }
 
+case class MullerConditionReversedImageTransducer[
+    A <: Letter,
+    B <: Letter,
+    S <: DeterminizedStateWithTransducer[A, B]](
+    bMullerCondition: MullerCondition[DeterminizedState[B]],
+    override val previousCondition: MullerConditionReversedImageTransducer[A,
+                                                                           B,
+                                                                           S])
+    extends MullerCondition[S](transitionsOccurances =
+                                 null: List[List[(Transition[S], Int)]],
+                               previousCondition = previousCondition) {
 
-case class MullerConditionImageTransducer[A <: Letter, B <: Letter](
-    mc: Condition[B],
-    dst: DeterminizedStateWithTransducer[A, B]
-) extends Condition[A] {
-  override def evaluateCondition(a: A): MullerConditionImageTransducer[A, B] = {
-    val lastLetter = dst.t.readLetter(a)._1
-    MullerConditionImageTransducer(mc.evaluateCondition(lastLetter),
-                                   dst.readLetter(a))
+  override def evaluateCondition(
+      t: Transition[S]): MullerConditionReversedImageTransducer[A, B, S] = {
+    val bTransition = Transition[DeterminizedState[B]](t.from.s, t.to.s)
+    val newBMullerCondition = bMullerCondition.evaluateCondition(bTransition)
+    MullerConditionReversedImageTransducer[A, B, S](newBMullerCondition, this)
   }
-}
-
-class MullerConditionForBuchiLanguage[A <:Letter, B <: BuchiLetter[A]] extends MullerCondition[B]{
-
 }

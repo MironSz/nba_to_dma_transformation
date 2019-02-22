@@ -1,13 +1,19 @@
 abstract class TransducerState[A <: Letter, B <: Letter] extends State {
   def readLetter(a: A): (B, TransducerState[A, B])
 
-  def dmaReversedImage(dma: DMA[B],
-                       startingStateInA: DeterminizedState[B]): DMA[A] =
-    new DMA[A](
+  def dmaReversedImage(dma: DMA[B]): DMA[A] =
+    DMA[A](
       DeterminizedStateWithTransducer[A, B](dma.startingState, this),
-      MullerConditionImageTransducer(
+      MullerConditionReversedImageTransducer[
+        A,
+        B,
+        DeterminizedStateWithTransducer[A, B]](
         dma.condition,
-        DeterminizedStateWithTransducer(dma.startingState, this))
+        null: MullerConditionReversedImageTransducer[
+          A,
+          B,
+          DeterminizedStateWithTransducer[A, B]]),
+      null
     )
 }
 
@@ -23,9 +29,15 @@ case class LetterToBuchiTransducer[A <: Letter](
             state
               .readLetter(a)
               .map(transition => (state, transition._2, transition._1)))
+        .map(
+          transition =>
+            AcceptingTransition[NondeterminizedState[A]](transition._1,
+                                                         transition._3,
+                                                         transition._2)
+        )
     )
     val newReachedStates =
-      buchiLetter.reachableStates.map(letter => letter._3).distinct
+      buchiLetter.transitions.map(t => t.to).distinct
     (buchiLetter, LetterToBuchiTransducer[A](newReachedStates))
   }
 }
@@ -43,15 +55,15 @@ case class DagToTreeTransducer[A <: Letter](
       allReachableStates.zipWithIndex
 
     val removedUnreachableFromLetter
-      : List[(NondeterminizedState[A], Boolean, NondeterminizedState[A])] =
-      a.reachableStates.filter(b => allReachableStates contains b._1)
+      : List[AcceptingTransition[NondeterminizedState[A]]] =
+      a.transitions.filter(t => allReachableStates contains t.to)
 
     val reachableStatesWithDuplicates
       : List[(Int, Boolean, NondeterminizedState[A], NondeterminizedState[A])] =
       allReachableStatesWithInd
         .map(rssbf =>
-          (rssbf._2, removedUnreachableFromLetter.filter(_._1 == rssbf._1)))
-        .map(b => b._2.map(c => (b._1, c._2, c._1, c._3)))
+          (rssbf._2, removedUnreachableFromLetter.filter(_.from == rssbf._1)))
+        .map(b => b._2.map(c => (b._1, c.acc, c.from, c.to)))
         .flatten
 
     val reachableStatesWithDuplicatesSorted =
@@ -70,11 +82,16 @@ case class DagToTreeTransducer[A <: Letter](
             else state :: l)
         .map(c => (c._2, c._1, c._3))
 
-    val newBuchiLetter = BuchiLetter[A](reachableStatesWithoutDuplicates)
+    val newBuchiLetter =
+      BuchiLetter[A](
+        reachableStatesWithoutDuplicates.map(
+          transition =>
+            AcceptingTransition[NondeterminizedState[A]](transition._1,
+                                                         transition._3,
+                                                         transition._2)))
 
     val newReachedStatesSortedByProfile =
       reachableStatesWithoutDuplicates.map(c => c._3)
     (newBuchiLetter, DagToTreeTransducer[A](newReachedStatesSortedByProfile))
-    //mogę reachedStateSortedByProfile zzipować z
   }
 }

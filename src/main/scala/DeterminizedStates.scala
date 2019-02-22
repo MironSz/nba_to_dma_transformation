@@ -1,5 +1,3 @@
-abstract class State() {}
-
 abstract class DeterminizedState[A <: Letter] extends State {
   def readLetter(a: A): DeterminizedState[A]
 }
@@ -24,6 +22,3 @@ case class DeterminizedStateWithTransducer[A <: Letter, B <: Letter](
                                               t.readLetter(a)._2)
   }
 }
-
-class BuchiTreeDeterminizedState[A <: Letter, B <: BuchiLetter[A]]
-    extends DeterminizedState[B] {}

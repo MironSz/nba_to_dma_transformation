@@ -1,15 +1,16 @@
-abstract class Condition[+S <: State] {
+abstract class Condition[S <: State] {
   def evaluateCondition(t: Transition[S]): Condition[S]
 
-  def acceptanceRates:Int
+  def acceptanceRates: Int
 }
 
-case class MullerCondition[+S <: State](
-    transitionsOccurances: List[List[(Transition[S], Int)]],
-    previousCondition: MullerCondition[S])
+class MullerCondition[S <: State](
+    val transitionsOccurances: List[List[(Transition[S], Int)]],
+    val previousCondition: MullerCondition[S])
     extends Condition[S] {
 
-  override def acceptanceRates: Int = transitionsOccurances.map(t=>t.map(t2=>t2._2).min).max
+  override def acceptanceRates: Int =
+    transitionsOccurances.map(t => t.map(t2 => t2._2).min).max
   override def evaluateCondition(
       t: Transition[S]
   ): MullerCondition[S] = {
@@ -21,14 +22,14 @@ case class MullerCondition[+S <: State](
         else
           l.map(b => (b._1, 0))
       })
-    MullerCondition[S](newtransitionsOccurances, this)
+    new MullerCondition[S](newtransitionsOccurances, this)
   }
 }
 
-case class MullerConditionReversedImageTransducer[
+class MullerConditionReversedImageTransducer[
     A <: Letter,
     B <: Letter,
-    S <: DeterminizedStateWithTransducer[A, B]](
+    +S <: DeterminizedStateWithTransducer[A, B]](
     bMullerCondition: MullerCondition[DeterminizedState[B]],
     override val previousCondition: MullerConditionReversedImageTransducer[A,
                                                                            B,
@@ -39,8 +40,9 @@ case class MullerConditionReversedImageTransducer[
 
   override def evaluateCondition(
       t: Transition[S]): MullerConditionReversedImageTransducer[A, B, S] = {
-    val bTransition = Transition[DeterminizedState[B]](t.from.s, t.to.s)
+    val bTransition = new Transition[DeterminizedState[B]](t.from.s, t.to.s)
     val newBMullerCondition = bMullerCondition.evaluateCondition(bTransition)
-    MullerConditionReversedImageTransducer[A, B, S](newBMullerCondition, this)
+    new MullerConditionReversedImageTransducer[A, B, S](newBMullerCondition,
+                                                        this)
   }
 }

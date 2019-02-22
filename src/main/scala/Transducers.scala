@@ -2,9 +2,9 @@ abstract class TransducerState[A <: Letter, B <: Letter] extends State {
   def readLetter(a: A): (B, TransducerState[A, B])
 
   def dmaReversedImage(dma: DMA[B]): DMA[A] =
-    DMA[A](
-      DeterminizedStateWithTransducer[A, B](dma.startingState, this),
-      MullerConditionReversedImageTransducer[
+    new DMA[A](
+      new DeterminizedStateWithTransducer[A, B](dma.startingState, this),
+      new MullerConditionReversedImageTransducer[
         A,
         B,
         DeterminizedStateWithTransducer[A, B]](

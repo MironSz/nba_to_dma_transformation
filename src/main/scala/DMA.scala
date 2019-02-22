@@ -1,13 +1,13 @@
-case class DMA[A <: Letter](startingState: DeterminizedState[A],
-                            condition: MullerCondition[DeterminizedState[A]],
-                            prevAcceptanceRates: List[Int])
+class DMA[A <: Letter](val startingState: DeterminizedState[A],
+                       val condition: MullerCondition[DeterminizedState[A]],
+                       val prevAcceptanceRates: List[Int])
     extends Automaton[A] {
   override def readLetter(a: A): DMA[A] = {
     val nextState = startingState.readLetter(a)
     new DMA[A](
       nextState,
       condition.evaluateCondition(
-        Transition[DeterminizedState[A]](startingState, nextState)
+        new Transition[DeterminizedState[A]](startingState, nextState)
       ),
       condition.acceptanceRates :: prevAcceptanceRates
     )

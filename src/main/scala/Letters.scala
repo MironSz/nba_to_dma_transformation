@@ -1,7 +1,7 @@
 class Letter {
   def allLetters: List[Letter] = Nil
 }
-case class MultipliedLetter[A <: Letter, B <: Letter](a: A, b: B)
+class MultipliedLetter[A <: Letter, B <: Letter](val a: A,val  b: B)
     extends Letter {
 //	This can remain like this, multiplied automatons are unused, lack of static methods is weird
   override def allLetters: List[MultipliedLetter[A, B]] = Nil

@@ -29,18 +29,20 @@ class MullerCondition[S <: State](
 class MullerConditionReversedImageTransducer[
     A <: Letter,
     B <: Letter,
-    +S <: DeterminizedStateWithTransducer[A, B]](
+    S <: DeterminizedStateWithTransducer[A, B]](
     bMullerCondition: MullerCondition[DeterminizedState[B]],
     override val previousCondition: MullerConditionReversedImageTransducer[A,
                                                                            B,
                                                                            S])
-    extends MullerCondition[S](transitionsOccurances =
+    extends MullerCondition[DeterminizedState[A]](transitionsOccurances =
                                  null: List[List[(Transition[S], Int)]],
                                previousCondition = previousCondition) {
 
   override def evaluateCondition(
-      t: Transition[S]): MullerConditionReversedImageTransducer[A, B, S] = {
-    val bTransition = new Transition[DeterminizedState[B]](t.from.s, t.to.s)
+      t: Transition[DeterminizedState[A]]): MullerConditionReversedImageTransducer[A, B, S] = {
+    val t2=t.asInstanceOf[Transition[DeterminizedStateWithTransducer[A,B]]]
+
+    val bTransition = new Transition[DeterminizedState[B]](t2.from.s, t2.to.s)
     val newBMullerCondition = bMullerCondition.evaluateCondition(bTransition)
     new MullerConditionReversedImageTransducer[A, B, S](newBMullerCondition,
                                                         this)

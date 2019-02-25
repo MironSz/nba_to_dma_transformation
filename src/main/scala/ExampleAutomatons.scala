@@ -7,7 +7,7 @@ class ExampleNondeterminizedState(
     transitions: Map[Int, AlphabetLetter => List[(Int, Boolean)]])
     extends NondeterminizedState[AlphabetLetter] {
   override def toString: String = {
-    "Example State id:"+stateId.toString
+    "Example State id:" + stateId.toString
   }
 
   override def readLetter(
@@ -16,26 +16,34 @@ class ExampleNondeterminizedState(
     val fNextState: AlphabetLetter => List[(Int, Boolean)] = transitions
       .get(stateId)
       .orNull
-    fNextState(a).map(b =>
-      (new ExampleNondeterminizedState(b._1, transitions), b._2))
+
+    try{fNextState(a).map(b =>
+      (new ExampleNondeterminizedState(b._1, transitions), b._2))}
+    catch {
+      case _:Throwable => List((new TrashState, false))
+    }
   }
 }
 
-object CSVtoNBA {
-  def parse(csvFile: String): ExampleNBA = {
+class TrashState extends ExampleNondeterminizedState(-1, null) {
+  override def toString: String = "Trash State"
+
+  override def readLetter(
+      a: AlphabetLetter): List[(ExampleNondeterminizedState, Boolean)] =
+    List((this, false))
+}
+object CSVParser {
+  def toNBA(csvFile: String): ExampleNBA = {
     val bufferedSource = io.Source.fromFile(csvFile)
     val transitions: Map[Int, AlphabetLetter => List[(Int, Boolean)]] =
       bufferedSource.getLines.zipWithIndex
         .map(lineWithIndex => {
-//          val index = lineWithIndex._2
           val line = lineWithIndex._1
           val splittedLine = line.split(" ")
-          print(splittedLine.fold("")((a,b)=>a+ " "+b)+"\n")
           val index = splittedLine(0).toInt
 
           val letterToTransition = splittedLine.tail
             .map(tDescription => {
-//              print("tDesctiption:"+tDescription+"\n")
               val splittedDescription = tDescription.split(";")
               val letter = splittedDescription(0).charAt(0)
               val transitionsOverLetter = splittedDescription.tail
@@ -53,7 +61,6 @@ object CSVtoNBA {
     val startingState = new ExampleNondeterminizedState(0, transitions)
     new ExampleNBA((startingState, 0) :: Nil, Nil)
   }
-
 }
 
 class ExampleNBA(currentStates2: List[(ExampleNondeterminizedState, Int)],
